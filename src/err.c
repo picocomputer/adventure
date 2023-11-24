@@ -6,7 +6,7 @@
 
 static void print(char *type, char *s1, char *s2)
 {
-    fprintf(stderr, "%s: %s\n", type, __stroserror(errno));
+    fprintf(stderr, "%s: %s\n", type, __stroserror(__oserror));
     fprintf(stderr, s1, s2);
     fprintf(stderr, "\n");
 }
