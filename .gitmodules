@@ -1,0 +1,3 @@
+[submodule "troglobit"]
+	path = troglobit
+	url = https://github.com/troglobit/adventure.git
