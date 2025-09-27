@@ -6,9 +6,9 @@
 
 static void print(char *type, char *s1, char *s2)
 {
-    fprintf(stderr, "%s: %s\n", type, __stroserror(__oserror));
-    fprintf(stderr, s1, s2);
-    fprintf(stderr, "\n");
+    (void)s1;
+    (void)s2;
+    fprintf(stderr, "%s: %s\n", type, strerror(errno));
 }
 
 void err(int eno, char *s1, char *s2)
