@@ -5,7 +5,10 @@ project(ADVENT4 C ASM)
 add_subdirectory(tools)
 
 add_executable(advent)
-rp6502_executable(advent)
+rp6502_executable(advent
+    DATA 0x200
+    RESET 0x200
+)
 target_include_directories(advent PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src
 )

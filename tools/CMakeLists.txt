@@ -5,35 +5,49 @@
 # RP6502 Executables
 # ^^^^^^^^^^^^^^^^^^
 #
-#  rp6502_executable(<name> START [addr] RESET [addr] roms...)
+#  rp6502_executable(<name>
+#                    [DATA <addr>]
+#                    [NMI <addr>]
+#                    [RESET <addr>]
+#                    [IRQ <addr>]
+#                    roms...)
 #
-# Packages an executable target called ``<name>`` in RP6502 ROM format.
-# ``START <addr>`` defaults to 0x200.
-# ``RESET <addr>`` defaults to 0x200.
+# Packages executable target ``<name>`` into RP6502 ROM format.
+# The word `file` may be used for any <addr> indicating the
+# address is to be read from the linker output in this order:
+# ``DATA <addr>`` Starting memory address to load data.
+# ``NMI <addr>`` Address for NMI to be stored at $FFFA-$FFFB.
+# ``RESET <addr>`` Address for RESET to be stored at $FFFC-$FFFD.
+# ``IRQ <addr>`` Address for IRQ to be stored at $FFFE-$FFFF.
 #
 function(rp6502_executable name)
     # Parse args
-    set(start_addr "0x200")
-    set(reset_addr "0x200")
+    set(data_addr "none")
+    set(nmi_addr "none")
+    set(reset_addr "none")
+    set(irq_addr "none")
     set(extra_roms)
     foreach(X IN LISTS ARGN)
-        if (NOT start_addr)
-            set(start_addr ${X})
+        if (NOT data_addr)
+            set(data_addr ${X})
         elseif (NOT reset_addr)
             set(reset_addr ${X})
-        elseif (X STREQUAL "START")
-            set(start_addr FALSE)
+        elseif (NOT irq_addr)
+            set(irq_addr ${X})
+        elseif (NOT nmi_addr)
+            set(nmi_addr ${X})
+        elseif (X STREQUAL "DATA")
+            set(data_addr FALSE)
         elseif (X STREQUAL "RESET")
             set(reset_addr FALSE)
+        elseif (X STREQUAL "IRQ")
+            set(irq_addr FALSE)
+        elseif (X STREQUAL "NMI")
+            set(nmi_addr FALSE)
         else ()
             list(APPEND extra_roms ${X})
-        endif()
+        endif ()
     endforeach()
-    if (NOT start_addr)
-        message (FATAL_ERROR "rp6502_executable START address missing")
-    elseif (NOT reset_addr)
-        message (FATAL_ERROR "rp6502_executable RESET address missing")
-    endif()
     # Remove old ROM
     add_custom_command(TARGET ${name} PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E remove
@@ -41,14 +55,44 @@ function(rp6502_executable name)
     )
     # Create new ROM
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(tool_command "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/rp6502.py"
+    )
+    if (NOT data_addr STREQUAL "none")
+        list(APPEND tool_command
+            -a "${data_addr}"
+        )
+    else ()
+        message (FATAL_ERROR "rp6502_executable DATA address missing")
+    endif ()
+    if (NOT nmi_addr STREQUAL "none")
+        list(APPEND tool_command
+            -n "${nmi_addr}"
+        )
+    endif ()
+    if (NOT reset_addr STREQUAL "none")
+        list(APPEND tool_command
+            -r "${reset_addr}"
+        )
+    else ()
+        message (FATAL_ERROR "rp6502_executable RESET address missing")
+    endif ()
+    if (NOT irq_addr STREQUAL "none")
+        list(APPEND tool_command
+            -i "${irq_addr}"
+        )
+    endif ()
+    list(APPEND tool_command
+        -o "${CMAKE_CURRENT_BINARY_DIR}/${name}.rp6502"
+        create "${CMAKE_CURRENT_BINARY_DIR}/${name}"
+        -- ${extra_roms}
+    )
     add_custom_command(TARGET ${name} POST_BUILD
-        COMMAND "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/tools/rp6502.py"
-            -a "${start_addr}" -r "${reset_addr}"
-            -o "${CMAKE_CURRENT_BINARY_DIR}/${name}.rp6502"
-            create "${CMAKE_CURRENT_BINARY_DIR}/${name}"
-            -- ${extra_roms}
-        DEPENDS ${name})
+        COMMAND ${tool_command}
+    )
+    set_property(TARGET ${name} APPEND PROPERTY
+        LINK_DEPENDS ${extra_roms}
+    )
 endfunction()
 
 # Package anything as an RP6502 ROM.
@@ -56,10 +100,12 @@ endfunction()
 # RP6502 ROMs
 # ^^^^^^^^^^^
 #
-#  rp6502_asset(<name> addr in_file {out_file})
+#  rp6502_asset(<name> addr in_file [out_file])
 #
-# Packages an executable target called ``<name>`` in RP6502 ROM format.
-# ``out_file`` defaults to in_file plus ``.rp6502``
+# Packages the ``in_file`` into RP6502 ROM format.
+# ``out_file`` defaults to ``in_file`` plus ``.rp6502``
+# Use `file` for the addr to get the address from the
+# first two bytes of in_file.
 #
 function(rp6502_asset name addr in_file)
     # Parse optional args
@@ -86,4 +132,5 @@ function(rp6502_asset name addr in_file)
             -o "${CMAKE_CURRENT_BINARY_DIR}/${out_file}"
             create "${CMAKE_CURRENT_SOURCE_DIR}/${in_file}"
     )
+    add_dependencies(${name} ${custom_target_name})
 endfunction()
