@@ -2,6 +2,6 @@
 #define _CONFIG_H
 
 #define SAVEDIR "."
-#define DATADIR "."
+#define DATADIR "ROM:"
 
 #endif /* _CONFIG_H */
