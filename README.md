@@ -1,5 +1,8 @@
-Colossal Cave Adventure
-=======================
+# Archived - DO NOT USE
+
+Moved to [examples](https://github.com/picocomputer/examples).
+
+## Colossal Cave Adventure
 
 This is the real, full-blown Colossal Cave Adventure game, written by
 Will Crowther and Don Woods at Stanford AI Lab in the early '70s.  It is
